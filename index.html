@@ -2,769 +2,410 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Baromètre — suivi de soirée</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taux — suivi d'alcoolémie</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  :root{
+    --bg:#12141a;
+    --bg-panel:#1a1d26;
+    --line:#2a2e3a;
+    --text:#e9e7e0;
+    --text-dim:#8b8f9e;
+    --beer:#e0a537;
+    --water:#4f8fd6;
+    --safe:#4caf7d;
+    --warn:#e0a537;
+    --danger:#e2574c;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); min-height:100vh;
+  }
+  body{ display:flex; justify-content:center; padding:24px 16px 60px; }
+  .app{ width:100%; max-width:480px; }
 
-:root{
-  --bg:#12151C;
-  --surface:#1B2029;
-  --surface-2:#232A38;
-  --border:#2A3140;
-  --text:#EEF0F4;
-  --text-muted:#8890A3;
-  --safe:#35D0A0;
-  --caution:#F2B84B;
-  --danger:#EF5B5F;
-  --beer:#E3A23D;
-  --water:#4FA3E3;
-  --meal:#B48EF0;
-  --radius:18px;
-}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;
+  }
+  h1{ font-size:22px; margin:0 0 24px; font-weight:700; letter-spacing:-0.01em; }
 
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; padding:0; background:#05060A;}
-body{
-  font-family:'Space Grotesk', system-ui, sans-serif;
-  color:var(--text);
-  display:flex;
-  justify-content:center;
-  min-height:100vh;
-}
-.mono{font-family:'JetBrains Mono', monospace;}
+  .panel{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px;
+    padding:20px; margin-bottom:16px;
+  }
 
-#app{
-  width:100%;
-  max-width:430px;
-  min-height:100vh;
-  background:var(--bg);
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  overflow-x:hidden;
-}
+  /* ---- setup form ---- */
+  label{ display:block; font-size:12px; color:var(--text-dim); margin:14px 0 6px; }
+  label:first-child{ margin-top:0; }
+  input[type=number], select{
+    width:100%; background:#0f1116; border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:10px 12px; font-size:15px; font-family:var(--mono);
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--water); }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .sexToggle{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+  .sexToggle button{
+    padding:10px; border-radius:8px; border:1px solid var(--line); background:#0f1116;
+    color:var(--text-dim); font-family:var(--sans); font-size:14px; cursor:pointer;
+  }
+  .sexToggle button.active{ border-color:var(--water); color:var(--text); background:#152030; }
 
-/* ---------- Top bar ---------- */
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:18px 20px 8px;
-}
-.topbar .brand{
-  font-weight:700;
-  font-size:15px;
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-  color:var(--text-muted);
-}
-.iconbtn{
-  width:38px; height:38px;
-  border-radius:50%;
-  background:var(--surface-2);
-  border:1px solid var(--border);
-  display:flex; align-items:center; justify-content:center;
-  color:var(--text-muted);
-  cursor:pointer;
-}
-.iconbtn svg{width:18px; height:18px;}
+  .btn-primary{
+    width:100%; margin-top:18px; padding:13px; border:none; border-radius:10px;
+    background:var(--text); color:#12141a; font-weight:700; font-size:15px; cursor:pointer;
+  }
+  .btn-primary:active{ transform:scale(.98); }
 
-/* ---------- Screens ---------- */
-.screen{display:none; flex-direction:column; flex:1; padding-bottom:120px;}
-.screen.active{display:flex;}
+  /* ---- gauge / signature element ---- */
+  .gaugeWrap{ text-align:center; }
+  .bacValue{
+    font-family:var(--mono); font-size:52px; font-weight:700; line-height:1;
+    letter-spacing:-0.02em;
+  }
+  .bacUnit{ font-size:16px; color:var(--text-dim); margin-left:4px; }
+  .bacStatus{ font-size:13px; margin-top:6px; color:var(--text-dim); }
 
-/* ---------- Setup form ---------- */
-#screen-setup{padding:24px 20px 40px;}
-.setup-title{font-size:24px; font-weight:700; margin:6px 0 4px;}
-.setup-sub{color:var(--text-muted); font-size:14px; line-height:1.5; margin-bottom:26px;}
-.field{margin-bottom:18px;}
-.field label{display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:8px;}
-.field input[type=number]{
-  width:100%; padding:14px 16px; border-radius:12px; border:1px solid var(--border);
-  background:var(--surface); color:var(--text); font-size:17px; font-family:'JetBrains Mono',monospace;
-}
-.seg{display:flex; gap:8px;}
-.seg button{
-  flex:1; padding:12px 8px; border-radius:12px; border:1px solid var(--border);
-  background:var(--surface); color:var(--text-muted); font-size:14px; font-weight:600; cursor:pointer;
-}
-.seg button.active{background:var(--surface-2); color:var(--text); border-color:#3A4258;}
-.hint{font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.4;}
-.primary-btn{
-  width:100%; padding:16px; border-radius:14px; border:none; margin-top:8px;
-  background:linear-gradient(135deg, #3DDC97, #2AB6C4);
-  color:#0A1210; font-weight:700; font-size:16px; cursor:pointer;
-}
-.disclaimer{
-  margin-top:22px; padding:14px; border-radius:12px; background:var(--surface);
-  border:1px solid var(--border); font-size:12px; color:var(--text-muted); line-height:1.5;
-}
+  .bar{
+    position:relative; height:34px; border-radius:8px; background:#0f1116;
+    margin-top:20px; overflow:hidden; border:1px solid var(--line);
+  }
+  .barFill{
+    position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:linear-gradient(90deg, var(--safe), var(--warn) 60%, var(--danger));
+    transition:width .6s ease;
+  }
+  .barMarker{
+    position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.35);
+  }
+  .barMarker span{
+    position:absolute; top:-18px; font-family:var(--mono); font-size:9px; color:var(--text-dim);
+    transform:translateX(-50%); white-space:nowrap;
+  }
+  .barScale{ display:flex; justify-content:space-between; font-family:var(--mono);
+    font-size:10px; color:var(--text-dim); margin-top:4px; }
 
-/* ---------- Dashboard ---------- */
-#screen-main{padding:4px 20px 0;}
+  .subStats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+  .stat{ background:#0f1116; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .stat .k{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; }
+  .stat .v{ font-family:var(--mono); font-size:16px; margin-top:2px; }
 
-.session-line{
-  display:flex; justify-content:space-between; align-items:baseline;
-  font-size:12px; color:var(--text-muted); margin:6px 2px 14px;
-}
-.session-line .now-clock{font-family:'JetBrains Mono',monospace; color:var(--text);}
+  /* ---- action buttons ---- */
+  .actions{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tapBtn{
+    padding:20px 10px; border-radius:12px; border:1px solid var(--line); cursor:pointer;
+    font-family:var(--sans); font-weight:700; font-size:15px; color:var(--text);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .tapBtn .ic{ font-size:26px; }
+  .tapBtn.beer{ background:#241c10; border-color:#4a3a1a; }
+  .tapBtn.water{ background:#101c24; border-color:#1a344a; }
+  .tapBtn:active{ transform:scale(.97); }
+  .tapBtn .sub{ font-family:var(--mono); font-size:10px; color:var(--text-dim); font-weight:400; }
 
-/* gauge card */
-.gauge-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:24px;
-  padding:18px 18px 8px;
-  display:flex; flex-direction:column; align-items:center;
-  position:relative;
-}
-.gauge-wrap{width:100%; max-width:280px;}
-.bac-readout{text-align:center; margin-top:-6px;}
-.bac-value{font-family:'JetBrains Mono',monospace; font-size:44px; font-weight:700; line-height:1;}
-.bac-unit{font-size:13px; color:var(--text-muted); margin-top:2px;}
-.bac-trend{font-size:12px; margin-top:6px; font-weight:600;}
-.status-pill{
-  display:inline-block; margin:10px auto 4px; padding:6px 14px; border-radius:20px;
-  font-size:12px; font-weight:700; letter-spacing:0.02em;
-}
+  .customRow{ display:flex; gap:8px; margin-top:10px; align-items:center; justify-content:center; }
+  .customRow input{ width:64px; text-align:center; padding:6px; font-size:12px; }
+  .customRow span{ font-size:11px; color:var(--text-dim); }
 
-/* stat grid */
-.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
-.stat-card{
-  background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px;
-}
-.stat-card .label{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:6px;}
-.stat-card .value{font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700;}
-.stat-card .sub{font-size:11px; color:var(--text-muted); margin-top:4px;}
-.bar-track{height:6px; border-radius:4px; background:var(--surface-2); margin-top:8px; overflow:hidden;}
-.bar-fill{height:100%; border-radius:4px;}
+  /* ---- history ---- */
+  .histHead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .histHead .eyebrow{ margin:0; }
+  .clearLink{ font-family:var(--mono); font-size:11px; color:var(--text-dim); background:none;
+    border:none; cursor:pointer; text-decoration:underline; }
+  .histItem{
+    display:flex; justify-content:space-between; align-items:center; padding:9px 0;
+    border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .histItem:last-child{ border-bottom:none; }
+  .histItem .l{ display:flex; align-items:center; gap:8px; }
+  .histItem .time{ font-family:var(--mono); color:var(--text-dim); font-size:12px; }
+  .histItem .del{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:16px; padding:0 4px; }
+  .empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:12px 0; }
 
-/* log */
-.log-section{margin-top:18px;}
-.log-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
-.log-header .title{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted);}
-.undo-btn{font-size:12px; color:var(--danger); background:none; border:none; cursor:pointer; font-weight:600;}
-.log-list{display:flex; flex-direction:column; gap:8px;}
-.log-item{
-  display:flex; align-items:center; gap:12px;
-  background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 12px;
-}
-.log-icon{
-  width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-  font-size:17px; flex-shrink:0;
-}
-.log-body{flex:1; min-width:0;}
-.log-title{font-size:13px; font-weight:600;}
-.log-time{font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace;}
-.log-del{background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px 6px;}
-.empty-log{color:var(--text-muted); font-size:13px; text-align:center; padding:20px 0;}
+  .editProfile{ font-family:var(--mono); font-size:11px; color:var(--text-dim); background:none;
+    border:none; cursor:pointer; text-decoration:underline; padding:0; }
 
-/* bottom action bar */
-.action-bar{
-  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
-  width:100%; max-width:430px;
-  padding:14px 16px calc(16px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg, rgba(18,21,28,0) 0%, rgba(18,21,28,0.96) 22%, #12151C 60%);
-  display:flex; gap:10px;
-}
-.action-btn{
-  flex:1; border:none; border-radius:18px; padding:14px 6px 12px;
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:12.5px;
-  cursor:pointer; color:#0A0C10;
-  box-shadow:0 6px 18px rgba(0,0,0,0.35);
-}
-.action-btn .ico{font-size:22px;}
-.btn-beer{background:linear-gradient(155deg, #F0B65E, var(--beer));}
-.btn-water{background:linear-gradient(155deg, #79C4F2, var(--water));}
-.btn-meal{background:linear-gradient(155deg, #CBA9F7, var(--meal));}
-
-/* modal */
-.modal-overlay{
-  position:fixed; inset:0; background:rgba(5,6,10,0.7);
-  display:none; align-items:flex-end; justify-content:center; z-index:50;
-}
-.modal-overlay.active{display:flex;}
-.modal-sheet{
-  width:100%; max-width:430px; background:var(--surface); border-radius:24px 24px 0 0;
-  padding:22px 20px calc(24px + env(safe-area-inset-bottom));
-  animation:slideup 0.22s ease-out;
-}
-@keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
-.modal-title{font-size:17px; font-weight:700; margin-bottom:4px;}
-.modal-sub{font-size:13px; color:var(--text-muted); margin-bottom:18px;}
-.meal-options{display:flex; flex-direction:column; gap:10px;}
-.meal-opt{
-  display:flex; align-items:center; gap:14px; padding:14px 16px;
-  border-radius:14px; border:1px solid var(--border); background:var(--surface-2);
-  cursor:pointer; text-align:left;
-}
-.meal-opt .ico{font-size:22px;}
-.meal-opt .txt strong{display:block; font-size:14px;}
-.meal-opt .txt span{font-size:12px; color:var(--text-muted);}
-.modal-cancel{
-  width:100%; margin-top:14px; padding:13px; border-radius:14px; border:1px solid var(--border);
-  background:transparent; color:var(--text-muted); font-weight:600; font-size:14px; cursor:pointer;
-}
-
-/* settings modal */
-.settings-row{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);}
-.settings-row:last-of-type{border-bottom:none;}
-.settings-row .label{font-size:13px; color:var(--text-muted);}
-.settings-row input[type=number]{
-  width:90px; text-align:right; padding:8px 10px; border-radius:10px; border:1px solid var(--border);
-  background:var(--surface-2); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px;
-}
-.reset-btn{
-  width:100%; margin-top:18px; padding:13px; border-radius:14px; border:1px solid var(--danger);
-  background:transparent; color:var(--danger); font-weight:700; font-size:14px; cursor:pointer;
-}
+  .footNote{ font-size:11px; color:var(--text-dim); line-height:1.5; margin-top:18px; text-align:center; }
 </style>
 </head>
 <body>
-<div id="app">
+<div class="app">
+  <div class="eyebrow">Suivi personnel — non médical</div>
+  <h1>Taux d'alcoolémie</h1>
 
-  <!-- ===================== SETUP SCREEN ===================== -->
-  <div class="screen active" id="screen-setup">
-    <div class="setup-title">Ton profil</div>
-    <div class="setup-sub">Ces données servent uniquement à calculer ton taux d'alcoolémie théorique le plus précisément possible (formule de Watson). Elles restent sur cet appareil.</div>
-
-    <div class="field">
-      <label>Sexe biologique</label>
-      <div class="seg" id="seg-sexe">
-        <button data-v="H" class="active">Homme</button>
-        <button data-v="F">Femme</button>
+  <!-- SETUP -->
+  <div class="panel" id="setupPanel" style="display:none;">
+    <label>Poids (kg)</label>
+    <input type="number" id="inWeight" placeholder="75" min="30" max="250">
+    <div class="row2">
+      <div>
+        <label>Taille (cm)</label>
+        <input type="number" id="inHeight" placeholder="178" min="120" max="230">
+      </div>
+      <div>
+        <label>Âge</label>
+        <input type="number" id="inAge" placeholder="26" min="16" max="99">
       </div>
     </div>
-
-    <div class="field">
-      <label>Poids (kg)</label>
-      <input type="number" id="in-poids" inputmode="decimal" value="76">
+    <label>Sexe biologique <span style="color:var(--text-dim)">(influence la répartition de l'eau corporelle)</span></label>
+    <div class="sexToggle">
+      <button type="button" id="sexM" onclick="setSex('M')">Homme</button>
+      <button type="button" id="sexF" onclick="setSex('F')">Femme</button>
     </div>
-
-    <div class="field">
-      <label>Taille (cm)</label>
-      <input type="number" id="in-taille" inputmode="decimal" value="178">
-    </div>
-
-    <div class="field">
-      <label>Âge</label>
-      <input type="number" id="in-age" inputmode="decimal" value="22">
-    </div>
-
-    <div class="field">
-      <label>Seuil légal de conduite</label>
-      <div class="seg" id="seg-seuil">
-        <button data-v="0.5" class="active">0.5 g/L (standard)</button>
-        <button data-v="0.2">0.2 g/L (jeune permis)</button>
-      </div>
-      <div class="hint">En Belgique : 0.5 g/L pour un permis classique, 0.2 g/L pendant les 2 premières années de permis ou pour conducteurs pros.</div>
-    </div>
-
-    <button class="primary-btn" id="btn-start">Commencer ma soirée</button>
-
-    <div class="disclaimer">⚠️ Cet outil donne une <strong>estimation théorique</strong> basée sur des formules moyennes (Widmark/Watson). Ton alcoolémie réelle peut varier fortement selon ta physiologie, ta fatigue, tes médicaments, etc. Ne t'en sers jamais comme preuve pour décider de prendre le volant — en cas de doute, ne conduis pas.</div>
+    <button class="btn-primary" onclick="saveProfile()">Commencer le suivi</button>
   </div>
 
-  <!-- ===================== MAIN DASHBOARD ===================== -->
-  <div class="screen" id="screen-main">
-    <div class="topbar">
-      <div class="brand">Baromètre</div>
-      <div class="iconbtn" id="btn-settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none;">
+
+    <div class="panel gaugeWrap">
+      <div class="bacValue" id="bacValue">0.00<span class="bacUnit">g/L</span></div>
+      <div class="bacStatus" id="bacStatus">Aucune consommation enregistrée</div>
+
+      <div class="bar">
+        <div class="barFill" id="barFill"></div>
+        <div class="barMarker" style="left:33.3%"><span>0.2</span></div>
+        <div class="barMarker" style="left:83.3%"><span>0.5 légal</span></div>
+      </div>
+      <div class="barScale"><span>0</span><span>0.6 g/L</span></div>
+
+      <div class="subStats">
+        <div class="stat">
+          <div class="k">Retour à zéro</div>
+          <div class="v" id="statZero">—</div>
+        </div>
+        <div class="stat">
+          <div class="k">Sous 0.5 g/L</div>
+          <div class="v" id="statLegal">—</div>
+        </div>
       </div>
     </div>
 
-    <div class="session-line">
-      <span id="session-duration">Soirée démarrée à --:--</span>
-      <span class="now-clock" id="now-clock">--:--</span>
-    </div>
-
-    <div class="gauge-card">
-      <div class="gauge-wrap">
-        <svg id="gauge-svg" viewBox="0 0 300 175" width="100%"></svg>
+    <div class="panel">
+      <div class="actions">
+        <button class="tapBtn beer" onclick="addDrink('beer')">
+          <span class="ic">🍺</span> Bière
+          <span class="sub" id="beerSub">25cl · 5%</span>
+        </button>
+        <button class="tapBtn water" onclick="addDrink('water')">
+          <span class="ic">💧</span> Eau
+        </button>
       </div>
-      <div class="bac-readout">
-        <div class="bac-value mono" id="bac-value">0.00</div>
-        <div class="bac-unit">g/L de sang (estimation)</div>
-        <div class="bac-trend" id="bac-trend">— stable</div>
-      </div>
-      <div class="status-pill" id="status-pill">Sobre</div>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="label">Conduite possible</div>
-        <div class="value" id="drive-time">--:--</div>
-        <div class="sub" id="drive-sub">calcul en cours…</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Gueule de bois prévue</div>
-        <div class="value" id="hangover-label">—</div>
-        <div class="bar-track"><div class="bar-fill" id="hangover-bar" style="width:0%; background:var(--safe);"></div></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Hydratation</div>
-        <div class="value" id="hydration-value">0 / 0 mL</div>
-        <div class="bar-track"><div class="bar-fill" id="hydration-bar" style="width:0%; background:var(--water);"></div></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Dernier repas</div>
-        <div class="value" id="last-meal-value" style="font-size:14px;">Aucun</div>
-        <div class="sub" id="last-meal-sub">pense à manger 🍽</div>
+      <div class="customRow">
+        <span>Format par défaut :</span>
+        <input type="number" id="beerVol" value="25" min="5" max="200"><span>cl</span>
+        <input type="number" id="beerDeg" value="5" step="0.1" min="0.5" max="15"><span>%</span>
+        <button class="clearLink" onclick="saveBeerDefaults()">ok</button>
       </div>
     </div>
 
-    <div class="log-section">
-      <div class="log-header">
-        <div class="title">Journal de la soirée</div>
-        <button class="undo-btn" id="btn-undo">Annuler la dernière action</button>
+    <div class="panel">
+      <div class="histHead">
+        <div class="eyebrow">Historique de la session</div>
+        <button class="clearLink" onclick="clearSession()">réinitialiser</button>
       </div>
-      <div class="log-list" id="log-list">
-        <div class="empty-log">Rien pour l'instant — appuie sur un bouton en bas 👇</div>
-      </div>
+      <div id="histList"><div class="empty">Aucune boisson enregistrée</div></div>
+    </div>
+
+    <button class="editProfile" onclick="editProfile()">Modifier mes données (poids / taille / âge / sexe)</button>
+    <div class="footNote">
+      Estimation basée sur la formule de Widmark/Watson. À visée purement indicative — ne reflète ni une mesure médicale ni un seuil légal fiable. Ne jamais prendre le volant en te basant sur ce chiffre.
     </div>
   </div>
-
-  <!-- action bar -->
-  <div class="action-bar" id="action-bar" style="display:none;">
-    <button class="action-btn btn-beer" id="btn-beer"><span class="ico">🍺</span>Bière 25cl</button>
-    <button class="action-btn btn-water" id="btn-water"><span class="ico">💧</span>Eau 25cl</button>
-    <button class="action-btn btn-meal" id="btn-meal"><span class="ico">🍽</span>Repas</button>
-  </div>
-
-  <!-- meal modal -->
-  <div class="modal-overlay" id="meal-modal">
-    <div class="modal-sheet">
-      <div class="modal-title">Quelle taille de repas ?</div>
-      <div class="modal-sub">Manger ralentit et réduit l'absorption de l'alcool — ça change le calcul.</div>
-      <div class="meal-options">
-        <button class="meal-opt" data-size="petit"><span class="ico">🥪</span><span class="txt"><strong>Petit repas</strong><span>snack, encas léger</span></span></button>
-        <button class="meal-opt" data-size="moyen"><span class="ico">🍝</span><span class="txt"><strong>Repas moyen</strong><span>repas classique</span></span></button>
-        <button class="meal-opt" data-size="gros"><span class="ico">🍖</span><span class="txt"><strong>Gros repas</strong><span>copieux, plat + accompagnement</span></span></button>
-      </div>
-      <button class="modal-cancel" id="meal-cancel">Annuler</button>
-    </div>
-  </div>
-
-  <!-- settings modal -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-sheet">
-      <div class="modal-title">Réglages</div>
-      <div class="modal-sub">Ajuste ton profil si besoin.</div>
-      <div class="settings-row"><span class="label">Poids (kg)</span><input type="number" id="set-poids"></div>
-      <div class="settings-row"><span class="label">Taille (cm)</span><input type="number" id="set-taille"></div>
-      <div class="settings-row"><span class="label">Âge</span><input type="number" id="set-age"></div>
-      <div class="settings-row"><span class="label">Élimination (g/L/h)</span><input type="number" step="0.01" id="set-beta"></div>
-      <div class="settings-row"><span class="label">Seuil conduite (g/L)</span><input type="number" step="0.1" id="set-seuil"></div>
-      <button class="modal-cancel" id="settings-close">Fermer</button>
-      <button class="reset-btn" id="btn-reset">Nouvelle soirée (efface le journal)</button>
-    </div>
-  </div>
-
 </div>
 
 <script>
-(function(){
-  "use strict";
+const STORAGE_KEY = 'bac-tracker-data';
+let data = { profile: null, events: [] };
+let pendingSex = null;
 
-  // ---------- constants ----------
-  const GRAMS_PER_BEER = 250 * 0.046 * 0.789; // vol(mL) * %abv * densité éthanol
-  const MEAL_PRESETS = {
-    petit: {bioavail:0.95, absorptionH:0.75, effectH:2, label:"petit repas"},
-    moyen: {bioavail:0.85, absorptionH:1.25, effectH:3, label:"repas moyen"},
-    gros:  {bioavail:0.75, absorptionH:2.0,  effectH:4, label:"gros repas"}
-  };
-  const EMPTY_STOMACH = {bioavail:1.0, absorptionH:0.5};
-  const STORAGE_KEY = "bac-tracker-state";
-
-  let state = {
-    profile: {sex:"H", weight:76, height:178, age:22, threshold:0.5, beta:0.15},
-    events: [], // {type:'beer'|'water'|'meal', time, grams?, size?}
-    sessionStart: null
-  };
-
-  // ---------- storage ----------
-  async function save(){
-    try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
-    catch(e){ console.error("storage save error", e); }
-  }
-  async function load(){
-    try{
-      const res = await window.storage.get(STORAGE_KEY, false);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
-        if(parsed && parsed.sessionStart){ state = parsed; return true; }
-      }
-    }catch(e){ /* no existing state */ }
-    return false;
-  }
-
-  // ---------- math ----------
-  function computeTBW(p){
-    if(p.sex === "F") return -2.097 + 0.1069*p.height + 0.2466*p.weight;
-    return 2.447 - 0.09516*p.age + 0.1074*p.height + 0.3362*p.weight; // Homme (Watson)
-  }
-  function bacDivisor(p){ return computeTBW(p) * 0.806; } // fraction eau du sang
-
-  function foodParamsAt(t){
-    // dernier repas encore "actif" avant t
-    let best = null;
-    for(const ev of state.events){
-      if(ev.type === "meal" && ev.time <= t){
-        const preset = MEAL_PRESETS[ev.size];
-        if((t - ev.time)/3600000 <= preset.effectH){
-          if(!best || ev.time > best.time) best = ev;
-        }
-      }
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY);
+    if(res && res.value){
+      data = JSON.parse(res.value);
     }
-    if(best) return MEAL_PRESETS[best.size];
-    return EMPTY_STOMACH;
+  }catch(e){
+    data = { profile: null, events: [] };
   }
+  render();
+}
 
-  function buildBeerEvents(){
-    return state.events.filter(e=>e.type==="beer").map(ev=>{
-      const fp = foodParamsAt(ev.time);
-      return {time: ev.time, grams: ev.grams, bioavail: fp.bioavail, absorptionH: fp.absorptionH};
-    });
+async function persist(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){
+    console.error('storage error', e);
   }
+}
 
-  function simulate(fromMs, toMs, stepMin){
-    const beers = buildBeerEvents();
-    const p = state.profile;
-    const divisor = bacDivisor(p);
-    const dt = stepMin/60;
-    let bac = 0, peak = 0;
-    let t = fromMs;
-    const stepMs = stepMin*60000;
-    if(toMs <= fromMs) return {bac:0, peak:0};
-    while(t <= toMs){
-      let rate = 0;
-      for(const b of beers){
-        const end = b.time + b.absorptionH*3600000;
-        if(t >= b.time && t <= end){
-          rate += (b.grams * b.bioavail) / b.absorptionH; // g/h
-        }
-      }
-      bac += (rate*dt)/divisor;
-      bac -= p.beta*dt;
-      if(bac < 0) bac = 0;
-      if(bac > peak) peak = bac;
-      t += stepMs;
+function setSex(s){
+  pendingSex = s;
+  document.getElementById('sexM').classList.toggle('active', s==='M');
+  document.getElementById('sexF').classList.toggle('active', s==='F');
+}
+
+async function saveProfile(){
+  const weight = parseFloat(document.getElementById('inWeight').value);
+  const height = parseFloat(document.getElementById('inHeight').value);
+  const age = parseFloat(document.getElementById('inAge').value);
+  if(!weight || !height || !age || !pendingSex){
+    alert('Merci de remplir poids, taille, âge et sexe biologique.');
+    return;
+  }
+  data.profile = { weight, height, age, sex: pendingSex, beerVolMl: (data.profile?.beerVolMl)||250, beerDeg: (data.profile?.beerDeg)||5 };
+  await persist();
+  render();
+}
+
+function editProfile(){
+  data.profile = null;
+  render();
+}
+
+async function saveBeerDefaults(){
+  const vol = parseFloat(document.getElementById('beerVol').value) || 25;
+  const deg = parseFloat(document.getElementById('beerDeg').value) || 5;
+  data.profile.beerVolMl = vol * 10;
+  data.profile.beerDeg = deg;
+  await persist();
+  render();
+}
+
+function gramsPerBeer(){
+  const p = data.profile;
+  return (p.beerVolMl * (p.beerDeg/100) * 0.8);
+}
+
+async function addDrink(type){
+  const ev = { type, ts: Date.now() };
+  if(type === 'beer'){ ev.grams = gramsPerBeer(); }
+  data.events.push(ev);
+  await persist();
+  render();
+}
+
+async function deleteEvent(idx){
+  data.events.splice(idx,1);
+  await persist();
+  render();
+}
+
+async function clearSession(){
+  if(!confirm('Effacer tout l\'historique de boissons ?')) return;
+  data.events = [];
+  await persist();
+  render();
+}
+
+// r factor via Watson formula
+function rFactor(p){
+  const W = p.weight, H = p.height, A = p.age;
+  let tbw;
+  if(p.sex === 'M'){
+    tbw = 2.447 - 0.09516*A + 0.1074*H + 0.3362*W;
+  } else {
+    tbw = -2.097 + 0.1069*H + 0.2466*W;
+  }
+  return Math.max(0.35, Math.min(0.8, tbw / W));
+}
+
+const BETA = 0.15; // g/L per hour elimination
+
+function computeBAC(nowTs){
+  const p = data.profile;
+  if(!p) return 0;
+  const r = rFactor(p);
+  const events = [...data.events].sort((a,b)=>a.ts-b.ts);
+  if(events.length === 0) return 0;
+  let bac = 0;
+  let lastTs = events[0].ts;
+  for(const ev of events){
+    const hours = (ev.ts - lastTs)/3600000;
+    bac = Math.max(0, bac - BETA*hours);
+    if(ev.type === 'beer'){
+      bac += ev.grams / (r * p.weight);
     }
-    return {bac, peak};
+    lastTs = ev.ts;
+  }
+  const hoursSince = (nowTs - lastTs)/3600000;
+  bac = Math.max(0, bac - BETA*hoursSince);
+  return bac;
+}
+
+function fmtDuration(hours){
+  if(hours <= 0) return 'atteint';
+  const h = Math.floor(hours);
+  const m = Math.round((hours-h)*60);
+  if(h === 0) return `${m} min`;
+  return `${h} h ${m.toString().padStart(2,'0')}`;
+}
+
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleTimeString('fr-BE', {hour:'2-digit', minute:'2-digit'});
+}
+
+function render(){
+  const hasProfile = !!data.profile;
+  document.getElementById('setupPanel').style.display = hasProfile ? 'none' : 'block';
+  document.getElementById('dashboard').style.display = hasProfile ? 'block' : 'none';
+  if(!hasProfile) return;
+
+  document.getElementById('beerVol').value = data.profile.beerVolMl/10;
+  document.getElementById('beerDeg').value = data.profile.beerDeg;
+  document.getElementById('beerSub').textContent = `${data.profile.beerVolMl/10}cl · ${data.profile.beerDeg}%`;
+
+  const now = Date.now();
+  const bac = computeBAC(now);
+  document.getElementById('bacValue').innerHTML = bac.toFixed(2) + '<span class="bacUnit">g/L</span>';
+
+  const pct = Math.min(100, (bac/0.6)*100);
+  const fill = document.getElementById('barFill');
+  fill.style.width = pct + '%';
+
+  const statusEl = document.getElementById('bacStatus');
+  if(data.events.length === 0){
+    statusEl.textContent = 'Aucune consommation enregistrée';
+  } else if(bac === 0){
+    statusEl.textContent = 'Taux estimé à zéro';
+  } else if(bac < 0.2){
+    statusEl.textContent = 'Sous le seuil jeunes/pro conducteurs (0.2 g/L)';
+  } else if(bac < 0.5){
+    statusEl.textContent = 'Sous le seuil légal général (0.5 g/L)';
+  } else {
+    statusEl.textContent = 'Au-dessus du seuil légal (0.5 g/L)';
   }
 
-  function currentBAC(){
-    if(!state.sessionStart) return {bac:0, peak:0};
-    return simulate(state.sessionStart, Date.now(), 1);
+  document.getElementById('statZero').textContent = data.events.length ? fmtDuration(bac/BETA) : '—';
+  const hoursToLegal = (bac-0.5)/BETA;
+  document.getElementById('statLegal').textContent = data.events.length ? (bac<=0.5 ? 'déjà sous 0.5' : fmtDuration(hoursToLegal)) : '—';
+
+  const list = document.getElementById('histList');
+  if(data.events.length === 0){
+    list.innerHTML = '<div class="empty">Aucune boisson enregistrée</div>';
+  } else {
+    const sorted = [...data.events].map((e,i)=>({...e, origIdx:i})).sort((a,b)=>b.ts-a.ts);
+    list.innerHTML = sorted.map(ev => `
+      <div class="histItem">
+        <div class="l">
+          <span>${ev.type==='beer' ? '🍺' : '💧'}</span>
+          <span>${ev.type==='beer' ? 'Bière ('+Math.round(ev.grams)+' g d\\'alcool)' : 'Eau'}</span>
+        </div>
+        <div class="l">
+          <span class="time">${fmtTime(ev.ts)}</span>
+          <button class="del" onclick="deleteEvent(${ev.origIdx})">×</button>
+        </div>
+      </div>
+    `).join('');
   }
+}
 
-  function driveClearTime(nowMs, currentBac, threshold){
-    if(currentBac <= threshold){
-      // vérifie qu'on ne remonte pas encore (absorption active)
-      const soon = simulate(state.sessionStart, nowMs + 10*60000, 1).bac;
-      if(soon <= threshold) return nowMs;
-    }
-    let t = nowMs;
-    const stepMs = 5*60000; // pas de 5 min pour la projection
-    const cap = nowMs + 30*3600000; // garde-fou 30h
-    while(t <= cap){
-      const r = simulate(state.sessionStart, t, 1);
-      if(r.bac <= threshold) return t;
-      t += stepMs;
-    }
-    return null;
-  }
-
-  function hangoverEstimate(peakBac, totalGrams, waterMl, mealsCount){
-    let score = peakBac*55;
-    const idealWater = totalGrams * (250/GRAMS_PER_BEER); // ~1 verre d'eau par bière-équivalent
-    const hydrationRatio = idealWater > 0 ? Math.min(1, waterMl/idealWater) : 1;
-    score += (1-hydrationRatio)*25;
-    score += Math.max(0, 2-mealsCount)*10;
-    score = Math.max(0, Math.min(100, score));
-    let label, color;
-    if(score < 15){label="Aucune"; color="var(--safe)";}
-    else if(score < 35){label="Légère"; color="var(--safe)";}
-    else if(score < 55){label="Modérée"; color="var(--caution)";}
-    else if(score < 75){label="Élevée"; color="var(--danger)";}
-    else {label="Sévère"; color="var(--danger)";}
-    return {score, label, color};
-  }
-
-  // ---------- formatting ----------
-  function fmtTime(ms){
-    const d = new Date(ms);
-    return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
-  }
-  function fmtTimeWithDay(ms, nowMs){
-    const d = new Date(ms), n = new Date(nowMs);
-    const sameDay = d.getDate()===n.getDate() && d.getMonth()===n.getMonth();
-    const t = fmtTime(ms);
-    if(sameDay) return t + " aujourd'hui";
-    return t + " demain";
-  }
-
-  // ---------- gauge (SVG) ----------
-  const GAUGE_MAX = 1.5; // g/L, échelle du cadran
-  function polar(cx, cy, r, angleDeg){
-    const a = angleDeg * Math.PI/180;
-    return {x: cx + r*Math.cos(a), y: cy - r*Math.sin(a)};
-  }
-  function arcPath(cx, cy, r, a1, a2){
-    const p1 = polar(cx,cy,r,a1), p2 = polar(cx,cy,r,a2);
-    const largeArc = Math.abs(a2-a1) > 180 ? 1 : 0;
-    return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${largeArc} 0 ${p2.x} ${p2.y}`;
-  }
-  function buildGauge(){
-    const svg = document.getElementById("gauge-svg");
-    const cx=150, cy=155, r=125, rInner=100;
-    const zones = [
-      {from:0, to:0.5, color:"var(--safe)"},
-      {from:0.5, to:0.8, color:"var(--caution)"},
-      {from:0.8, to:GAUGE_MAX, color:"var(--danger)"}
-    ];
-    let html = "";
-    for(const z of zones){
-      const a1 = 180 - (z.from/GAUGE_MAX)*180;
-      const a2 = 180 - (z.to/GAUGE_MAX)*180;
-      html += `<path d="${arcPath(cx,cy,r,a1,a2)}" stroke="${z.color}" stroke-width="16" fill="none" stroke-linecap="round" opacity="0.9"/>`;
-    }
-    // ticks
-    for(let v=0; v<=GAUGE_MAX+0.001; v+=0.25){
-      const a = 180 - (v/GAUGE_MAX)*180;
-      const p1 = polar(cx,cy,r+13,a), p2 = polar(cx,cy,r+20,a);
-      html += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="var(--text-muted)" stroke-width="2"/>`;
-    }
-    html += `<line id="needle" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-rInner}" stroke="var(--text)" stroke-width="4" stroke-linecap="round" transform="rotate(90 ${cx} ${cy})"/>`;
-    html += `<circle cx="${cx}" cy="${cy}" r="8" fill="var(--text)"/>`;
-    svg.innerHTML = html;
-  }
-  function updateNeedle(bac){
-    const needle = document.getElementById("needle");
-    if(!needle) return;
-    const clamped = Math.max(0, Math.min(GAUGE_MAX, bac));
-    const angle = 180 - (clamped/GAUGE_MAX)*180; // 180 (gauche,0) -> 0 (droite,max)
-    const cx=150, cy=155;
-    const rotation = 90 - angle; // needle base pointe vers le haut (90deg), on tourne vers l'angle cible
-    needle.setAttribute("transform", `rotate(${rotation} ${cx} ${cy})`);
-  }
-
-  // ---------- rendering ----------
-  let lastBac = 0;
-  function render(){
-    document.getElementById("now-clock").textContent = fmtTime(Date.now());
-    if(!state.sessionStart) return;
-
-    document.getElementById("session-duration").textContent = "Soirée démarrée à " + fmtTime(state.sessionStart);
-
-    const {bac, peak} = currentBAC();
-    updateNeedle(bac);
-    document.getElementById("bac-value").textContent = bac.toFixed(2);
-
-    const trendEl = document.getElementById("bac-trend");
-    const diff = bac - lastBac;
-    if(diff > 0.001){ trendEl.textContent = "↑ en hausse"; trendEl.style.color = "var(--danger)"; }
-    else if(diff < -0.001){ trendEl.textContent = "↓ en baisse"; trendEl.style.color = "var(--safe)"; }
-    else { trendEl.textContent = "→ stable"; trendEl.style.color = "var(--text-muted)"; }
-    lastBac = bac;
-
-    const pill = document.getElementById("status-pill");
-    const p = state.profile;
-    if(bac <= p.threshold*0.5){ pill.textContent="Sobre"; pill.style.background="rgba(53,208,160,0.15)"; pill.style.color="var(--safe)"; }
-    else if(bac <= p.threshold){ pill.textContent="Attention"; pill.style.background="rgba(53,208,160,0.15)"; pill.style.color="var(--safe)"; }
-    else if(bac <= 0.8){ pill.textContent="Au-dessus du seuil légal"; pill.style.background="rgba(242,184,75,0.15)"; pill.style.color="var(--caution)"; }
-    else { pill.textContent="Zone à risque"; pill.style.background="rgba(239,91,95,0.15)"; pill.style.color="var(--danger)"; }
-
-    // drive time
-    const clear = driveClearTime(Date.now(), bac, p.threshold);
-    if(clear === null){
-      document.getElementById("drive-time").textContent = "> 30h";
-      document.getElementById("drive-sub").textContent = "continue de suivre ta soirée";
-    } else if(clear <= Date.now() + 60000){
-      document.getElementById("drive-time").textContent = "Maintenant";
-      document.getElementById("drive-sub").textContent = "sous le seuil de " + p.threshold + " g/L";
-    } else {
-      document.getElementById("drive-time").textContent = fmtTime(clear);
-      document.getElementById("drive-sub").textContent = fmtTimeWithDay(clear, Date.now());
-    }
-
-    // hydration
-    const totalGrams = state.events.filter(e=>e.type==="beer").reduce((s,e)=>s+e.grams,0);
-    const totalWater = state.events.filter(e=>e.type==="water").reduce((s,e)=>s+e.volume,0);
-    const idealWater = totalGrams * (250/GRAMS_PER_BEER);
-    document.getElementById("hydration-value").textContent = totalWater + " / " + Math.round(idealWater) + " mL";
-    const hydroPct = idealWater>0 ? Math.min(100,(totalWater/idealWater)*100) : 100;
-    document.getElementById("hydration-bar").style.width = hydroPct+"%";
-    document.getElementById("hydration-bar").style.background = hydroPct>=80 ? "var(--safe)" : "var(--water)";
-
-    // hangover
-    const mealsCount = state.events.filter(e=>e.type==="meal").length;
-    const hg = hangoverEstimate(peak, totalGrams, totalWater, mealsCount);
-    document.getElementById("hangover-label").textContent = hg.label;
-    document.getElementById("hangover-bar").style.width = hg.score+"%";
-    document.getElementById("hangover-bar").style.background = hg.color;
-
-    // last meal
-    const meals = state.events.filter(e=>e.type==="meal");
-    if(meals.length){
-      const last = meals[meals.length-1];
-      document.getElementById("last-meal-value").textContent = MEAL_PRESETS[last.size].label;
-      const minsAgo = Math.round((Date.now()-last.time)/60000);
-      document.getElementById("last-meal-sub").textContent = "il y a " + (minsAgo<60 ? minsAgo+" min" : Math.floor(minsAgo/60)+"h"+(minsAgo%60).toString().padStart(2,"0"));
-    } else {
-      document.getElementById("last-meal-value").textContent = "Aucun";
-      document.getElementById("last-meal-sub").textContent = "pense à manger 🍽";
-    }
-
-    renderLog();
-  }
-
-  function renderLog(){
-    const list = document.getElementById("log-list");
-    if(state.events.length === 0){
-      list.innerHTML = '<div class="empty-log">Aucune action enregistrée — appuie sur un bouton en bas 👇</div>';
-      return;
-    }
-    const sorted = [...state.events].sort((a,b)=>b.time-a.time);
-    list.innerHTML = sorted.map(ev=>{
-      let icon="🍺", bg="rgba(227,162,61,0.18)", title="Bière 25cl";
-      if(ev.type==="water"){ icon="💧"; bg="rgba(79,163,227,0.18)"; title="Eau 25cl"; }
-      if(ev.type==="meal"){ icon = ev.size==="petit"?"🥪":ev.size==="moyen"?"🍝":"🍖"; bg="rgba(180,142,240,0.18)"; title=MEAL_PRESETS[ev.size].label.replace(/^./,c=>c.toUpperCase()); }
-      return `<div class="log-item">
-        <div class="log-icon" style="background:${bg}">${icon}</div>
-        <div class="log-body"><div class="log-title">${title}</div><div class="log-time">${fmtTime(ev.time)}</div></div>
-        <button class="log-del" data-id="${ev.id}">✕</button>
-      </div>`;
-    }).join("");
-    list.querySelectorAll(".log-del").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        state.events = state.events.filter(e=>e.id !== btn.dataset.id);
-        save(); render();
-      });
-    });
-  }
-
-  // ---------- actions ----------
-  function addEvent(ev){
-    ev.id = Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-    state.events.push(ev);
-    save();
-    render();
-  }
-
-  function addBeer(){
-    addEvent({type:"beer", time:Date.now(), grams: GRAMS_PER_BEER});
-  }
-  function addWater(){
-    addEvent({type:"water", time:Date.now(), volume:250});
-  }
-  function addMeal(size){
-    addEvent({type:"meal", time:Date.now(), size});
-  }
-  function undoLast(){
-    if(state.events.length===0) return;
-    let latest = state.events[0];
-    for(const e of state.events) if(e.time > latest.time) latest = e;
-    state.events = state.events.filter(e=>e.id !== latest.id);
-    save(); render();
-  }
-
-  // ---------- setup screen wiring ----------
-  let selSex = "H", selSeuil = 0.5;
-  document.getElementById("seg-sexe").addEventListener("click", e=>{
-    const btn = e.target.closest("button"); if(!btn) return;
-    document.querySelectorAll("#seg-sexe button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active"); selSex = btn.dataset.v;
-  });
-  document.getElementById("seg-seuil").addEventListener("click", e=>{
-    const btn = e.target.closest("button"); if(!btn) return;
-    document.querySelectorAll("#seg-seuil button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active"); selSeuil = parseFloat(btn.dataset.v);
-  });
-
-  document.getElementById("btn-start").addEventListener("click", ()=>{
-    state.profile = {
-      sex: selSex,
-      weight: parseFloat(document.getElementById("in-poids").value)||76,
-      height: parseFloat(document.getElementById("in-taille").value)||178,
-      age: parseFloat(document.getElementById("in-age").value)||22,
-      threshold: selSeuil,
-      beta: 0.15
-    };
-    state.sessionStart = Date.now();
-    state.events = [];
-    save();
-    goToMain();
-  });
-
-  // ---------- main screen wiring ----------
-  document.getElementById("btn-beer").addEventListener("click", addBeer);
-  document.getElementById("btn-water").addEventListener("click", addWater);
-  document.getElementById("btn-meal").addEventListener("click", ()=>{
-    document.getElementById("meal-modal").classList.add("active");
-  });
-  document.getElementById("meal-cancel").addEventListener("click", ()=>{
-    document.getElementById("meal-modal").classList.remove("active");
-  });
-  document.querySelectorAll(".meal-opt").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      addMeal(btn.dataset.size);
-      document.getElementById("meal-modal").classList.remove("active");
-    });
-  });
-  document.getElementById("btn-undo").addEventListener("click", undoLast);
-
-  document.getElementById("btn-settings").addEventListener("click", ()=>{
-    document.getElementById("set-poids").value = state.profile.weight;
-    document.getElementById("set-taille").value = state.profile.height;
-    document.getElementById("set-age").value = state.profile.age;
-    document.getElementById("set-beta").value = state.profile.beta;
-    document.getElementById("set-seuil").value = state.profile.threshold;
-    document.getElementById("settings-modal").classList.add("active");
-  });
-  document.getElementById("settings-close").addEventListener("click", ()=>{
-    state.profile.weight = parseFloat(document.getElementById("set-poids").value)||state.profile.weight;
-    state.profile.height = parseFloat(document.getElementById("set-taille").value)||state.profile.height;
-    state.profile.age = parseFloat(document.getElementById("set-age").value)||state.profile.age;
-    state.profile.beta = parseFloat(document.getElementById("set-beta").value)||state.profile.beta;
-    state.profile.threshold = parseFloat(document.getElementById("set-seuil").value)||state.profile.threshold;
-    save();
-    document.getElementById("settings-modal").classList.remove("active");
-    render();
-  });
-  document.getElementById("btn-reset").addEventListener("click", ()=>{
-    if(!confirm("Effacer le journal et démarrer une nouvelle soirée ?")) return;
-    state.events = [];
-    state.sessionStart = Date.now();
-    save();
-    document.getElementById("settings-modal").classList.remove("active");
-    render();
-  });
-
-  // ---------- boot ----------
-  function goToMain(){
-    document.getElementById("screen-setup").classList.remove("active");
-    document.getElementById("screen-main").classList.add("active");
-    document.getElementById("action-bar").style.display = "flex";
-    buildGauge();
-    render();
-  }
-
-  (async function init(){
-    const had = await load();
-    if(had && state.sessionStart){
-      goToMain();
-    }
-    setInterval(()=>{
-      if(state.sessionStart) render();
-      else document.getElementById("now-clock") && (document.getElementById("now-clock").textContent = fmtTime(Date.now()));
-    }, 4000);
-  })();
-
-})();
+loadData();
+setInterval(()=>{ if(data.profile) render(); }, 5000);
 </script>
 </body>
 </html>
